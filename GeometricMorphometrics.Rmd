@@ -96,7 +96,30 @@ lndmrks = map_dfr(ls,~{
 
 gpa = gpagen(lndmrks)
 summary(gpa)
+library(plotly)
+# view landmarks one by one
+# plotAllSpecimens(arrayspecs(lndmrks[,,10],800,3))
+plotdf = lndmrks[,,3] %>% as_tibble %>% setNames(c("X","Y","Z"))
+plot_ly(data = plotdf,
+        x = ~X,
+        y = ~Y,
+        z = ~Z) %>% 
+  add_markers(size = 1) %>% 
+  layout(title = "landmarks",
+         scene = list(aspectmode='data'))
+# look at aligned coordinates
 # plotAllSpecimens(gpa$coords)
+# look at mean shape
+m = mshape(gpa$coords)
+# plot(m)
+plotdf = as_tibble(m)
+plot_ly(data = plotdf,
+        x = ~X,
+        y = ~Y,
+        z = ~Z) %>% 
+  add_markers(size = 1) %>% 
+  layout(title = "mean shape",
+         scene = list(aspectmode='data'))
 pca = gm.prcomp(gpa$coords)
 plotdf = pca$x[,1:2] %>%
   as_tibble() %>% 
@@ -105,5 +128,7 @@ plotdf %>% ggplot(aes(Comp1,Comp2,label = names)) +
   geom_point()
 library(plotly)
 ggplotly()
+
+
 ```
 
