@@ -1,0 +1,14 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.blend
+*.blend1
+AutoDecimate.py
+JPGs*
+Photogrammetry Example*
+*.txt
+osfstorage-archive.zip
+Convert2WRL.py
+*.wrl
+CoadsDataset-Ohio/

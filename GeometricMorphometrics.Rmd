@@ -1,0 +1,109 @@
+---
+title: "Geometric Morphometrics"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(Momocs)
+library(geomorph)
+library(here)
+```
+
+# Outline analysis
+
+This code shows how outline analysis can be conducted
+
+```{r}
+ls = list.files(here("JPGs"),
+                pattern = "jpg",
+                full.names = T)
+img = import_jpg(ls)
+out = img %>%
+  Out %>%
+  Momocs::coo_smooth(100) %>% 
+  coo_center()
+out %>% panel
+fac = tibble(file = ls,name = names(out)) %>% 
+  separate(name,
+           into = c("type","no"),
+           sep = "_",
+           remove = F) %>% 
+  mutate_at(vars(type),factor)
+out$fac = fac
+out %>% panel(fac = "type", palette = col_gallus)
+c = calibrate_harmonicpower_efourier(out,nb.h = 25)
+# use 99% result
+nh = c$minh[3]
+outEFA = out %>%
+  efourier(nh)
+outPCA = outEFA %>% PCA
+outPCA %>% plot_PCA("type")
+outPCA %>% LDA("type") %>% plot_LDA()
+
+outPCA = out %>%
+  coo_sample(100) %>%
+  coo_align() %>%
+  coo_rotate(1.5708) %>%
+  Ldk() %>%
+  fgProcrustes() %>% 
+  PCA
+
+outPCA %>% plot_PCA("type")
+outPCA %>% LDA("type") %>% plot_LDA()
+
+```
+
+
+# First step for 3D gm is to digitize the landmarks
+
+The [geomorph](https://cran.r-project.org/web/packages/geomorph/index.html) package can be used for this. [This vignette](https://cran.r-project.org/web/packages/geomorph/vignettes/geomorph.digitize3D.html) shows us how to do it.
+
+```{.r}
+data("scallopPLY")
+my.ply <- scallopPLY$ply
+fixed.lms1 <- digit.fixed(spec = my.ply, fixed = 5)
+my.ply.2 <- scallopPLY$ply
+fixed.lms2 <- digit.fixed(my.ply.2, 5)
+surf.pts1 <- buildtemplate(spec = my.ply,
+                           fixed = fixed.lms1,
+                           surface.sliders = 100)
+surf.pts2 <- digitsurface(spec = my.ply.2,
+                          fixed = fixed.lms2)
+```
+
+The above code didn't work when I tried it on projectile points.
+
+I got an automatic process to work with [Artifact GeoMorph Toolbox 3D](https://sourceforge.net/projects/artifact-geomorph-toolbox-3d/)
+
+```{r}
+library(rio)
+ls = list.files(here("COADSDataset-Ohio/"),
+                pattern = "xlsx",
+                full.names = T)
+nms = list.files(here("COADSDataset-Ohio/"),
+                pattern = "xlsx",
+                full.names = F) %>% 
+  gsub(".xlsx","",.)
+lndmrks = map_dfr(ls,~{
+  tmp = import(.x)
+}) %>% as.matrix %>% 
+  arrayspecs(800,3)
+
+gpa = gpagen(lndmrks)
+summary(gpa)
+# plotAllSpecimens(gpa$coords)
+pca = gm.prcomp(gpa$coords)
+plotdf = pca$x[,1:2] %>%
+  as_tibble() %>% 
+  mutate(names = nms)
+plotdf %>% ggplot(aes(Comp1,Comp2,label = names)) +
+  geom_point()
+library(plotly)
+ggplotly()
+```
+
